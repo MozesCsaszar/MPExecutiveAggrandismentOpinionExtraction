@@ -5,7 +5,7 @@ import spacy
 from spacy.tokens import Doc
 import re
 from blingfire import text_to_sentences
-from tqdm.notebook import tqdm
+from tqdm.auto import tqdm
 
 tqdm.pandas()
 

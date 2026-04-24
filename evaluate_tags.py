@@ -1,41 +1,15 @@
 import pandas as pd
 import argparse
-from tqdm import tqdm
-
-parser = argparse.ArgumentParser()
-parser.add_argument("dataset_path", type=str)
-parser.add_argument("-e", "--max_examples", type=int, default=5)
-parser.add_argument("-x", "--extra_lf_cols", type=str, nargs="+", default=["hmm"])
-
-args = parser.parse_args()
+from tqdm.auto import tqdm
 
 
-# [[ChatGPT]] + modified by me
-def run_lf_diagnostics(
-    file_path: str = "outputs/preprocessed.csv",
-    max_examples: int = 5,
-    extra_lf_cols=["hmm"],
-):
-    print("Reading data...")
-    # the full dataframe
-    df_full = pd.read_csv(file_path)
-    lf_cols = [col for col in df_full.columns if col.find("lf") != -1]
-
-    # the dataframe only containing LFs
-    all_cols = [*lf_cols, *extra_lf_cols]
-    df = df_full[lf_cols]
-
-    # --- Coverage ---
-    print("Calculating coverage...")
-    coverage = (df_full[lf_cols].notnull().any(axis=1)).mean()
-
-    # --- Per-LF stats ---
+def extract_lf_stats(df: pd.DataFrame, all_label_cols: list[str]):
     print("Calculating per-LF stats...")
     lf_stats = []
-    for lf_col in tqdm(all_cols, total=len(all_cols), postfix="LFs"):
-        col = df_full[lf_col]
+    for lf_col in tqdm(all_label_cols, total=len(all_label_cols), postfix="LFs"):
+        col = df[lf_col]
         fired = col.notnull().sum()
-        coverage_lf = fired / len(df_full)
+        coverage_lf = fired / len(df)
 
         label_counts = col.value_counts().to_dict()
 
@@ -47,32 +21,14 @@ def run_lf_diagnostics(
                 "PRO": label_counts.get("PRO", 0),
                 "CONTRA": label_counts.get("CONTRA", 0),
                 "NEUTRAL": label_counts.get("NEUTRAL", 0),
-                "Abstain": len(df_full) - fired,
+                "Abstain": len(df) - fired,
             }
         )
 
-    lf_stats_df = pd.DataFrame(lf_stats).sort_values(by="Coverage", ascending=False)
+    return pd.DataFrame(lf_stats).sort_values(by="Coverage", ascending=False)
 
-    # Overlap
-    print("Calculating overlap...")
-    num_lfs_fired = df.notnull().sum(axis=1)
-    overlap_mean = num_lfs_fired.mean()
 
-    # Conflict
-    print("Calculating conflict...")
-
-    def has_conflict(row):
-        labels = set(row.dropna())
-        return "PRO" in labels and "CONTRA" in labels
-
-    conflict_rate = df.apply(has_conflict, axis=1).mean()
-
-    # Label distribution (raw LF votes)
-    all_votes = df.stack()
-    label_dist = all_votes.value_counts(normalize=True)
-
-    # Extract Examples
-    print("Extracting examples...")
+def extract_examples(df: pd.DataFrame, df_full: pd.DataFrame, max_examples: int = 5):
     examples = {
         "high_conflict": [],
         "pro_examples": [],
@@ -100,6 +56,53 @@ def run_lf_diagnostics(
         elif "NEUTRAL" in labels:
             if len(examples["neutral_examples"]) < max_examples:
                 examples["neutral_examples"].append(text)
+
+    return examples
+
+
+# [[ChatGPT]] + modified by me
+def run_lf_diagnostics(
+    file_path: str = "outputs/preprocessed.csv",
+    max_examples: int = 5,
+    extra_lf_cols=["hmm"],
+):
+    print("Reading data...")
+    # the full dataframe
+    df_full = pd.read_csv(file_path)
+    lf_cols = [col for col in df_full.columns if col.find("lf") != -1]
+
+    # the dataframe only containing LFs
+    all_label_cols = [*lf_cols, *extra_lf_cols]
+    df = df_full[lf_cols]
+
+    # --- Coverage ---
+    print("Calculating coverage...")
+    coverage = (df_full[lf_cols].notnull().any(axis=1)).mean()
+
+    # --- Per-LF stats ---
+    lf_stats_df = extract_lf_stats(df_full, all_label_cols)
+
+    # Overlap
+    print("Calculating overlap...")
+    num_lfs_fired = df.notnull().sum(axis=1)
+    overlap_mean = num_lfs_fired.mean()
+
+    # Conflict
+    print("Calculating conflict...")
+
+    def has_conflict(row):
+        labels = set(row.dropna())
+        return "PRO" in labels and "CONTRA" in labels
+
+    conflict_rate = df.apply(has_conflict, axis=1).mean()
+
+    # Label distribution (raw LF votes)
+    all_votes = df.stack()
+    label_dist = all_votes.value_counts(normalize=True)
+
+    # Extract Examples
+    print("Extracting examples...")
+    examples = extract_examples(df, df_full, max_examples)
 
     # Output statistics
     print("\n" + "=" * 60)
@@ -145,5 +148,12 @@ def run_lf_diagnostics(
     return df, lf_stats_df
 
 
-print("Running diagnostics...")
-run_lf_diagnostics(args.dataset_path, args.max_examples, args.extra_lf_cols)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dataset_path", type=str)
+    parser.add_argument("-e", "--max_examples", type=int, default=5)
+    parser.add_argument("-x", "--extra_lf_cols", type=str, nargs="+", default=["hmm"])
+
+    args = parser.parse_args()
+
+    run_lf_diagnostics(args.dataset_path, args.max_examples, args.extra_lf_cols)
