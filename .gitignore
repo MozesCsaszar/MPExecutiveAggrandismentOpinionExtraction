@@ -1,0 +1,7 @@
+*.txt
+outputs/
+.venv
+.vscode
+__pycache__/
+*.pickle
+checkpoint-*/
