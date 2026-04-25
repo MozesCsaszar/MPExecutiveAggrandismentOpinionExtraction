@@ -39,7 +39,7 @@ def extract_examples(df: pd.DataFrame, df_full: pd.DataFrame, max_examples: int 
     # TODO: Speed this up by direct query
     for i, row in df.iterrows():
         labels = list(row.dropna())
-        text = df_full.iloc[[i]]["Text"]
+        text = f"[[{df_full.iloc[[i]]['ID']}]] {df_full.iloc[[i]]['Text']}"
 
         if "PRO" in labels and "CONTRA" in labels:
             if len(examples["high_conflict"]) < max_examples:
@@ -139,9 +139,7 @@ def run_lf_diagnostics(
             print(f"\n{k.upper()}:")
             for ex in v:
                 text = ex.values[0]
-                if len(text) > 200:
-                    text = text[:200] + "..."
-                print(f"- {text}")
+                print(f" - {text}")
         else:
             print(f"\nNO {k.upper()}...")
 
