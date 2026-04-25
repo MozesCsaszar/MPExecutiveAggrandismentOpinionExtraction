@@ -4,6 +4,8 @@ import skweak
 from utilities import make_docs, extract_speeches, create_file_name
 import argparse
 import importlib
+import time
+from .evaluate_tags import run_lf_diagnostics
 
 # set up spac Doc custom attribute
 Doc.set_extension("attrs", default={}, force=True)
@@ -17,7 +19,9 @@ def preprocess_tag(
     suffix: str = "",
     *,
     annotators_module="annotators",
+    auto_evalute=True,
 ):
+    start = time.time()
     annotators = importlib.import_module(annotators_module)
     full_annotator = annotators.full_annotator
     labeled_docs_to_pandas = annotators.labeled_docs_to_pandas
@@ -70,8 +74,12 @@ def preprocess_tag(
     df_fitted_docs.to_csv(output_file)
 
     print(
-        f"Weak supervision done for dataset `{dataset_path}` for years `{', '.join(years)}`!"
+        f"Weak supervision done for dataset `{dataset_path}`"
+        + f" for years `{', '.join(years)}` in {(time.time() - start):.2f} seconds."
     )
+
+    if auto_evalute:
+        run_lf_diagnostics(output_file)
 
 
 if __name__ == "__main__":
@@ -83,6 +91,9 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--end_date", type=str, default=None)
     parser.add_argument("-a", "--annotators_module", type=str, default="annotators")
     parser.add_argument("--suffix", type=str, default="")
+    parser.add_argument(
+        "--auto_evaluate", action=argparse.BooleanOptionalAction, default=True
+    )
 
     args = parser.parse_args()
 
@@ -93,4 +104,5 @@ if __name__ == "__main__":
         args.end_date,
         args.suffix,
         annotators_module=args.annotators_module,
+        auto_evalute=args.auto_evaluate,
     )
