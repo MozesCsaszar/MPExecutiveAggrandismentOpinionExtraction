@@ -10,6 +10,12 @@ from tqdm.auto import tqdm
 tqdm.pandas()
 
 
+def create_file_name(prefix: str, years: list[str], suffix: str, extension: str):
+    if len(suffix) > 0:
+        suffix = "-" + suffix
+    return f"{prefix}-{'-'.join(years)}{suffix}.{extension}"
+
+
 def extract_speeches(
     root: str,
     years: list[str],
@@ -17,6 +23,8 @@ def extract_speeches(
     filter_chairman: bool = True,
     filter_guest: bool = True,
     convert_dates: bool = False,
+    start_date: str | None = None,
+    end_date: str | None = None,
 ) -> pd.DataFrame:
     """
     Read in the text data found in the ParliaMint dataset, from path to folder `root`,
@@ -49,6 +57,16 @@ def extract_speeches(
         df_speech = df_speech[(df_speech["Speaker_role"] != "Chairperson")]
     if filter_guest:
         df_speech = df_speech[(df_speech["Speaker_role"] != "Guest")]
+
+    # filter out dates outside of the time range specified
+    if start_date is None:
+        start_date = df_speech["Date"].min()
+    if end_date is None:
+        end_date = df_speech["Date"].max()
+
+    df_speech = df_speech[
+        (df_speech["Date"] >= start_date) & (df_speech["Date"] <= end_date)
+    ]
 
     # do some data cleaning
     df_speech["Speaker_birth"] = pd.to_numeric(
