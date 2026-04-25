@@ -1,10 +1,12 @@
 from spacy.tokens import Doc
 import skweak
-from annotators.helpers import _lf_preprocess
+from .helpers import _lf_preprocess
+from .consts import NEGATIVE, PRO_ACTION, PRO_JUSTIFICATION, PRO_POWER, INSTITUTIONS
+from .lf_generators import generate_variants, window_match
 
 
 # Strong leadership / centralisation framing [[ChatGPT]]
-PRO_STRONG = [
+_PRO_STRONG = [
     "erős kormány",
     "erős vezetés",
     "határozott kormányzás",
@@ -16,7 +18,7 @@ PRO_STRONG = [
 
 def lf_pro_strong_leader(doc: Doc):
     text = _lf_preprocess(doc)
-    if any(p in text for p in PRO_STRONG):
+    if any(p in text for p in _PRO_STRONG):
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
@@ -25,7 +27,7 @@ lf_pro_strong_leader = skweak.heuristics.FunctionAnnotator(
 )  # type: ignore
 
 # Emergency powers justification [[ChatGPT]]
-PRO_EMERGENCY = [
+_PRO_EMERGENCY = [
     "rendkívüli állapot szükséges",
     "veszélyhelyzet indokolja",
     "felhatalmazás szükséges",
@@ -35,7 +37,7 @@ PRO_EMERGENCY = [
 
 def lf_pro_emergency(doc: Doc):
     text = _lf_preprocess(doc)
-    if any(p in text for p in PRO_EMERGENCY):
+    if any(p in text for p in _PRO_EMERGENCY):
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
@@ -44,13 +46,12 @@ lf_pro_emergency = skweak.heuristics.FunctionAnnotator(
 )  # type: ignore
 
 # Judiciary criticism [[ChatGPT]]
-JUDICIARY = ["bíróság", "alkotmánybíróság", "bírók"]
-NEG = ["akadályoz", "lassú", "politikai", "elfogult"]
+_JUDICIARY = ["bíróság", "alkotmánybíróság", "bírók"]
 
 
 def lf_pro_judiciary_attack(doc: Doc):
     text = _lf_preprocess(doc)
-    if any(j in text for j in JUDICIARY) and any(n in text for n in NEG):
+    if any(j in text for j in _JUDICIARY) and any(n in text for n in NEGATIVE):
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
@@ -59,7 +60,7 @@ lf_pro_judiciary_attack = skweak.heuristics.FunctionAnnotator(
 )  # type: ignore
 
 # Anti-opposition framing (weak proxy) [[ChatGPT]]
-PRO_OPPOSITION_ATTACK = [
+_PRO_OPPOSITION_ATTACK = [
     "ellenzék akadályozza",
     "ellenzék hátráltatja",
     "ellenzék felelőtlen",
@@ -68,7 +69,7 @@ PRO_OPPOSITION_ATTACK = [
 
 def lf_pro_opposition_attack(doc: Doc):
     text = _lf_preprocess(doc)
-    if any(p in text for p in PRO_OPPOSITION_ATTACK):
+    if any(p in text for p in _PRO_OPPOSITION_ATTACK):
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
@@ -86,10 +87,35 @@ def lf_pro_government_party(doc):
         return "PRO"
 
 
+lfs_pro_action = generate_variants("pro_action", "PRO", PRO_POWER, PRO_ACTION)
+
+lfs_pro_justification = generate_variants(
+    "pro_justification", "PRO", PRO_POWER, PRO_JUSTIFICATION
+)
+
+lfs_pro_judiciary = generate_variants(
+    "pro_judiciary_attack", "PRO", INSTITUTIONS, NEGATIVE
+)
+
+
+def lf_pro_weak(doc: Doc):
+    window_matched = window_match(doc, PRO_POWER, PRO_ACTION, 10)
+    if window_matched:
+        yield doc[0].i, doc[-1].i + 1, "PRO"
+
+
+lf_pro_weak = skweak.heuristics.FunctionAnnotator(
+    "lf_pro_weak", lf_pro_weak
+)  # type: ignore
+
 pro_annotator = skweak.base.CombinedAnnotator()
 pro_annotator.add_annotators(
     lf_pro_emergency,  # type: ignore
     lf_pro_opposition_attack,  # type: ignore
     lf_pro_judiciary_attack,  # type: ignore
     lf_pro_strong_leader,  # type: ignore
+    lf_pro_weak,  # type: ignore
+    *lfs_pro_action,
+    *lfs_pro_justification,
+    *lfs_pro_judiciary
 )
