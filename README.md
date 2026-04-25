@@ -74,6 +74,10 @@ graph LR
     class Z NotStarted
 ```
 
+## Data
+- I'll be using the 2017 Hungarian parliamentary speeches from ParlaMint for purposes of building the training data as it is supposed to contain some EA
+- I'll be using the 2020 Hungarian parliamentary speeches from ParlaMint for purposes of validating the model, as it is during the COVID, which supposedly introduced more EA after the wake of emergency powers
+
 ## Docs
 
 ### Design Decisions
@@ -99,3 +103,9 @@ graph LR
 - output is all green and neutral
 - conclusions: I need better labeling functions and a better way to handle data if I want to ever get anywhere
 - lessons: data extraction is incredibly slow and labeling quality leaves a lot to be desired
+
+## Structure
+
+### Annotators
+- the current version of the annotator functions can be found in the `annotators` module
+- older versions are in the `annotators-v<nr>` folders for easy and quick reproducibility (dynamic module loading and all that jazz)
