@@ -1,21 +1,32 @@
 import spacy
 from spacy.tokens import Doc
 import skweak
-from annotators import full_annotator, labeled_docs_to_pandas
-from utilities import make_docs, extract_speeches
+from utilities import make_docs, extract_speeches, create_file_name
 import argparse
-
+import importlib
 
 # set up spac Doc custom attribute
 Doc.set_extension("attrs", default={}, force=True)
 
 
 def preprocess_tag(
-    dataset_path: str = ".\\ParlaMint-HU.txt", years: list[str] = ["2014"]
+    dataset_path: str = ".\\ParlaMint-HU.txt",
+    years: list[str] = ["2014"],
+    start_date: str | None = None,
+    end_date: str | None = None,
+    suffix: str = "",
+    *,
+    annotators_module="annotators",
 ):
+    annotators = importlib.import_module(annotators_module)
+    full_annotator = annotators.full_annotator
+    labeled_docs_to_pandas = annotators.labeled_docs_to_pandas
+
     # extract the speeches
     print("Extracting speeches...")
-    df_speech = extract_speeches(dataset_path, years)
+    df_speech = extract_speeches(
+        dataset_path, years, start_date=start_date, end_date=end_date
+    )
 
     # load spacy NLP module; disable all components to speed up processing
     print("Loading NLP model...")
@@ -51,13 +62,15 @@ def preprocess_tag(
     fitted_docs = list(hmm.pipe(annotated_docs))
 
     # save as a pandas CSV
-    output_file = f"outputs/labeled-{'-'.join(years)}.csv"
+    file_name = create_file_name("labeled", years, suffix, "csv")
+    output_file = f"outputs/{file_name}"
+
     print(f"Saving dataset to `{output_file}`...")
     df_fitted_docs = labeled_docs_to_pandas(fitted_docs, True)
     df_fitted_docs.to_csv(output_file)
 
     print(
-        f"Weak supervision done for dataset {dataset_path} for years `{', '.join(years)}`"
+        f"Weak supervision done for dataset `{dataset_path}` for years `{', '.join(years)}`!"
     )
 
 
@@ -66,7 +79,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset_path", type=str, default=".\\ParlaMint-HU.txt")
     parser.add_argument("-y", "--years", type=str, nargs="*", default=["2013"])
+    parser.add_argument("-s", "--start_date", type=str, default=None)
+    parser.add_argument("-e", "--end_date", type=str, default=None)
+    parser.add_argument("-a", "--annotators_module", type=str, default="annotators")
+    parser.add_argument("--suffix", type=str, default="")
 
     args = parser.parse_args()
 
-    preprocess_tag()
+    preprocess_tag(
+        args.dataset_path,
+        args.years,
+        args.start_date,
+        args.end_date,
+        args.suffix,
+        annotators_module=args.annotators_module,
+    )
