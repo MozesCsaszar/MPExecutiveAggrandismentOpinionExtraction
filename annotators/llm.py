@@ -57,10 +57,10 @@ def create_llm_annotator(
     return skweak.heuristics.FunctionAnnotator(name, lf)  # type: ignore
 
 
-gemini_flash_v1_annotator = create_llm_annotator(
-    "gemini_flash_v1_annotator", ["2017"], "gemini_flash"
+lf_gemini_flash_v1_annotator = create_llm_annotator(
+    "lf_gemini_flash_v1_annotator", ["2017"], "gemini_flash"
 )
 
 
 llm_annotators = skweak.base.CombinedAnnotator()
-llm_annotators.add_annotator(gemini_flash_v1_annotator)
+llm_annotators.add_annotator(lf_gemini_flash_v1_annotator)
