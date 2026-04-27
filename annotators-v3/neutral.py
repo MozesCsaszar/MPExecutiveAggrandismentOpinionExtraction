@@ -1,6 +1,6 @@
 from spacy.tokens import Doc
 import skweak
-from .lf_generators import contains_any
+from .helpers import _lf_preprocess
 
 # Procedural speech [[ChatGPT]]
 NEUTRAL_PROCEDURAL = [
@@ -13,7 +13,8 @@ NEUTRAL_PROCEDURAL = [
 
 
 def lf_neutral_procedural(doc: Doc):
-    if contains_any(doc, NEUTRAL_PROCEDURAL):
+    text = _lf_preprocess(doc)
+    if any(p in text for p in NEUTRAL_PROCEDURAL):
         yield doc[0].i, doc[-1].i + 1, "NEUTRAL"
 
 
@@ -22,8 +23,21 @@ lf_neutral_procedural = skweak.heuristics.FunctionAnnotator(
 )  # type: ignore
 
 
+# Very short utterances [[ChatGPT]]
+MIN_WORD_COUNT = 5
+
+
+def lf_neutral_short(doc: Doc):
+    if len(doc) < MIN_WORD_COUNT:
+        yield doc[0].i, doc[-1].i + 1, "NEUTRAL"
+
+
+lf_neutral_short = skweak.heuristics.FunctionAnnotator(
+    "lf_neutral_short", lf_neutral_short
+)  # type: ignore
+
 neutral_annotator = skweak.base.CombinedAnnotator()
 neutral_annotator.add_annotators(
-    # TODO: Figure out whether I want to re-introduce this or not
-    # lf_neutral_procedural,  # type: ignore
+    lf_neutral_procedural,  # type: ignore
+    lf_neutral_short,  # type: ignore
 )

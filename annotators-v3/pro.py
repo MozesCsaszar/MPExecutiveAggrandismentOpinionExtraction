@@ -1,25 +1,8 @@
 from spacy.tokens import Doc
 import skweak
-from .consts import (
-    CON_EROSION,
-    MODAL_POS,
-    NEGATIVE,
-    PRO_ACTION,
-    PRO_CRISIS,
-    PRO_EFFICIENCY,
-    PRO_JUSTIFICATION,
-    PRO_POWER,
-    INSTITUTIONS,
-    PRO_STRONG,
-    TARGET_INSTITUTIONS,
-    TARGET_POWER,
-)
-from .lf_generators import (
-    generate_variants,
-    window_match_lemma,
-    contains_any,
-    has_negation,
-)
+from .helpers import _lf_preprocess
+from .consts import NEGATIVE, PRO_ACTION, PRO_JUSTIFICATION, PRO_POWER, INSTITUTIONS
+from .lf_generators import generate_variants, window_match
 
 
 # Strong leadership / centralisation framing [[ChatGPT]]
@@ -34,7 +17,8 @@ _PRO_STRONG = [
 
 
 def lf_pro_strong_leader(doc: Doc):
-    if contains_any(doc, _PRO_STRONG):
+    text = _lf_preprocess(doc)
+    if any(p in text for p in _PRO_STRONG):
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
@@ -52,7 +36,8 @@ _PRO_EMERGENCY = [
 
 
 def lf_pro_emergency(doc: Doc):
-    if contains_any(doc, _PRO_EMERGENCY):
+    text = _lf_preprocess(doc)
+    if any(p in text for p in _PRO_EMERGENCY):
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
@@ -60,6 +45,19 @@ lf_pro_emergency = skweak.heuristics.FunctionAnnotator(
     "lf_pro_emergency", lf_pro_emergency
 )  # type: ignore
 
+# Judiciary criticism [[ChatGPT]]
+_JUDICIARY = ["bíróság", "alkotmánybíróság", "bírók"]
+
+
+def lf_pro_judiciary_attack(doc: Doc):
+    text = _lf_preprocess(doc)
+    if any(j in text for j in _JUDICIARY) and any(n in text for n in NEGATIVE):
+        yield doc[0].i, doc[-1].i + 1, "PRO"
+
+
+lf_pro_judiciary_attack = skweak.heuristics.FunctionAnnotator(
+    "lf_pro_judiciary_attack", lf_pro_judiciary_attack
+)  # type: ignore
 
 # Anti-opposition framing (weak proxy) [[ChatGPT]]
 _PRO_OPPOSITION_ATTACK = [
@@ -70,7 +68,8 @@ _PRO_OPPOSITION_ATTACK = [
 
 
 def lf_pro_opposition_attack(doc: Doc):
-    if contains_any(doc, _PRO_OPPOSITION_ATTACK):
+    text = _lf_preprocess(doc)
+    if any(p in text for p in _PRO_OPPOSITION_ATTACK):
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
@@ -81,10 +80,11 @@ lf_pro_opposition_attack = skweak.heuristics.FunctionAnnotator(
 
 # Government party prior (from ParlaMint) [[ChatGPT]]
 # TODO: Make this work
-def lf_pro_gov_party(doc):
-    if hasattr(doc._, "party") and hasattr(doc._, "gov_parties"):
-        if doc._.party in doc._.gov_parties:
-            yield doc[0].i, doc[-1].i + 1, "PRO"
+def lf_pro_government_party(doc):
+    party = doc._.party  # from ParlaMint metadata
+    gov_parties = doc._.gov_parties
+    if party in gov_parties:
+        return "PRO"
 
 
 lfs_pro_action = generate_variants("pro_action", "PRO", PRO_POWER, PRO_ACTION)
@@ -98,54 +98,14 @@ lfs_pro_judiciary = generate_variants(
 )
 
 
-def lf_pro_weak(doc):
-    if contains_any(doc, PRO_STRONG):
+def lf_pro_broad(doc: Doc):
+    window_matched = window_match(doc, PRO_POWER, PRO_ACTION, 10)
+    if window_matched:
         yield doc[0].i, doc[-1].i + 1, "PRO"
 
 
-lf_pro_weak = skweak.heuristics.FunctionAnnotator(
-    "lf_pro_weak", lf_pro_weak
-)  # type: ignore
-
-
-def lf_pro_modal_power(doc):
-    if window_match_lemma(doc, TARGET_POWER, MODAL_POS, 5):
-        if not has_negation(doc, MODAL_POS):
-            yield doc[0].i, doc[-1].i + 1, "PRO"
-
-
-lf_pro_modal_power = skweak.heuristics.FunctionAnnotator(
-    "lf_pro_modal_power", lf_pro_modal_power
-)  # type: ignore
-
-
-def lf_pro_efficiency(doc):
-    if window_match_lemma(doc, TARGET_POWER, PRO_EFFICIENCY, 5):
-        yield doc[0].i, doc[-1].i + 1, "PRO"
-
-
-lf_pro_efficiency = skweak.heuristics.FunctionAnnotator(
-    "lf_pro_efficiency", lf_pro_efficiency
-)  # type: ignore
-
-
-def lf_pro_crisis(doc):
-    if window_match_lemma(doc, TARGET_POWER, PRO_CRISIS, 7):
-        yield doc[0].i, doc[-1].i + 1, "PRO"
-
-
-lf_pro_crisis = skweak.heuristics.FunctionAnnotator(
-    "lf_pro_crisis", lf_pro_crisis
-)  # type: ignore
-
-
-def lf_pro_judiciary_attack(doc):
-    if window_match_lemma(doc, TARGET_INSTITUTIONS, CON_EROSION, 5):
-        yield doc[0].i, doc[-1].i + 1, "PRO"
-
-
-lf_pro_judiciary_attack = skweak.heuristics.FunctionAnnotator(
-    "lf_pro_judiciary_attack", lf_pro_judiciary_attack
+lf_pro_broad = skweak.heuristics.FunctionAnnotator(
+    "lf_pro_weak", lf_pro_broad
 )  # type: ignore
 
 pro_annotator = skweak.base.CombinedAnnotator()
@@ -154,10 +114,7 @@ pro_annotator.add_annotators(
     lf_pro_opposition_attack,  # type: ignore
     lf_pro_judiciary_attack,  # type: ignore
     lf_pro_strong_leader,  # type: ignore
-    lf_pro_weak,  # type: ignore
-    lf_pro_modal_power,  # type: ignore
-    lf_pro_efficiency,  # type: ignore
-    lf_pro_crisis,  # type: ignore
+    lf_pro_broad,  # type: ignore
     *lfs_pro_action,
     *lfs_pro_justification,
     *lfs_pro_judiciary

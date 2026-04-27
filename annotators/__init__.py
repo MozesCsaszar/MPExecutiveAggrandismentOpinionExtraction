@@ -1,7 +1,7 @@
-from annotators.pro import pro_annotator
-from annotators.contra import contra_annotator
-from annotators.neutral import neutral_annotator
-from annotators.helpers import labeled_docs_to_pandas
+from .pro import pro_annotator
+from .contra import contra_annotator
+from .neutral import neutral_annotator
+from .helpers import labeled_docs_to_pandas
 import skweak
 
 full_annotator = skweak.base.CombinedAnnotator()

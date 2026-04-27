@@ -1,14 +1,17 @@
 import spacy
 from spacy.tokens import Doc
 import skweak
-from utilities import make_docs, extract_speeches, create_file_name
+from utilities import (
+    make_docs,
+    extract_speeches,
+    create_file_name,
+    load_docs,
+    save_docs,
+)
 import argparse
 import importlib
 import time
-from .evaluate_tags import run_lf_diagnostics
-
-# set up spac Doc custom attribute
-Doc.set_extension("attrs", default={}, force=True)
+from evaluate_tags import run_lf_diagnostics
 
 
 def preprocess_tag(
@@ -26,31 +29,48 @@ def preprocess_tag(
     full_annotator = annotators.full_annotator
     labeled_docs_to_pandas = annotators.labeled_docs_to_pandas
 
-    # extract the speeches
-    print("Extracting speeches...")
-    df_speech = extract_speeches(
-        dataset_path, years, start_date=start_date, end_date=end_date
-    )
-
     # load spacy NLP module; disable all components to speed up processing
     print("Loading NLP model...")
     nlp = spacy.load(
         "hu_core_news_md",
         disable=[
-            "tok2vec",
+            # "tok2vec",
             "senter",
-            "tagger",
-            "morphologizer",
-            "lookup_lemmatizer",
-            "trainable_lemmatizer",
-            "parser",
+            # "tagger",
+            # "morphologizer",
+            # "lookup_lemmatizer",
+            # "trainable_lemmatizer",
+            # "parser",
             "ner",
         ],
     )
 
-    # convert the dataframe to sentence-sized docs
-    print("Making docs...")
-    docs = list(make_docs(nlp, df_speech, drop_text_column=False))
+    save_load_suffix = ""
+    if start_date:
+        save_load_suffix += start_date
+        if end_date:
+            save_load_suffix += "-"
+    if end_date:
+        save_load_suffix += end_date
+
+    # Loading data from disk
+    print("Loading docs...")
+    docs = load_docs(nlp, years, suffix=save_load_suffix)
+
+    if not docs:
+        # extract the speeches
+        print("Loading failed. Extracting speeches...")
+        df_speech = extract_speeches(
+            dataset_path, years, start_date=start_date, end_date=end_date
+        )
+
+        # convert the dataframe to sentence-sized docs
+        print("Making docs...")
+        docs = list(make_docs(nlp, df_speech, drop_text_column=False))
+
+        # saving NLP'd speeches
+        print("Saving speech docs...")
+        save_docs(docs, years, suffix=save_load_suffix)
 
     # apply the annotator to my docs
     print("Annotating docs...")

@@ -28,36 +28,33 @@ def extract_lf_stats(df: pd.DataFrame, all_label_cols: list[str]):
     return pd.DataFrame(lf_stats).sort_values(by="Coverage", ascending=False)
 
 
-def extract_examples(df: pd.DataFrame, df_full: pd.DataFrame, max_examples: int = 5):
-    examples = {
-        "high_conflict": [],
-        "pro_examples": [],
-        "con_examples": [],
-        "neutral_examples": [],
+def _format_examples(df: pd.DataFrame, max_examples: int = 5):
+    return (
+        df.head(max_examples)
+        .apply(lambda r: f"[[{r['ID']}]] {r['Text']}", axis=1)
+        .tolist()
+    )
+
+
+# [[ChatGPT]]+
+def extract_examples(
+    df: pd.DataFrame,
+    max_examples: int = 5,
+    final_label_col: str = "hmm",
+):
+    df_high_conflict = df[
+        (df.isin(["PRO"]).any(axis=1)) & (df.isin(["CONTRA"]).any(axis=1))
+    ]
+    df_pro = df[df[final_label_col] == "PRO"]
+    df_contra = df[df[final_label_col] == "CONTRA"]
+    df_neutral = df[df[final_label_col] == "NEUTRAL"]
+
+    return {
+        "high_conflict": _format_examples(df_high_conflict, max_examples),
+        "pro_examples": _format_examples(df_pro, max_examples),
+        "con_examples": _format_examples(df_contra, max_examples),
+        "neutral_examples": _format_examples(df_neutral, max_examples),
     }
-
-    # TODO: Speed this up by direct query
-    for i, row in df.iterrows():
-        labels = list(row.dropna())
-        text = f"[[{df_full.iloc[[i]]['ID']}]] {df_full.iloc[[i]]['Text']}"
-
-        if "PRO" in labels and "CONTRA" in labels:
-            if len(examples["high_conflict"]) < max_examples:
-                examples["high_conflict"].append(text)
-
-        elif "PRO" in labels:
-            if len(examples["pro_examples"]) < max_examples:
-                examples["pro_examples"].append(text)
-
-        elif "CONTRA" in labels:
-            if len(examples["con_examples"]) < max_examples:
-                examples["con_examples"].append(text)
-
-        elif "NEUTRAL" in labels:
-            if len(examples["neutral_examples"]) < max_examples:
-                examples["neutral_examples"].append(text)
-
-    return examples
 
 
 # [[ChatGPT]] + modified by me
@@ -68,7 +65,7 @@ def run_lf_diagnostics(
 ):
     print("Reading data...")
     # the full dataframe
-    df_full = pd.read_csv(file_path)
+    df_full = pd.read_csv(file_path, low_memory=False)
     lf_cols = [col for col in df_full.columns if col.find("lf") != -1]
 
     # the dataframe only containing LFs
@@ -102,7 +99,7 @@ def run_lf_diagnostics(
 
     # Extract Examples
     print("Extracting examples...")
-    examples = extract_examples(df, df_full, max_examples)
+    examples = extract_examples(df_full, max_examples)
 
     # Output statistics
     print("\n" + "=" * 60)
@@ -137,8 +134,7 @@ def run_lf_diagnostics(
     for k, v in examples.items():
         if len(v) > 0:
             print(f"\n{k.upper()}:")
-            for ex in v:
-                text = ex.values[0]
+            for text in v:
                 print(f" - {text}")
         else:
             print(f"\nNO {k.upper()}...")

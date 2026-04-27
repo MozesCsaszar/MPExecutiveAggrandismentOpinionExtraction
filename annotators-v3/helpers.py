@@ -9,6 +9,10 @@ def extract_label(doc: Doc, layer: str) -> str | None:
     return labels[0] if len(labels) == 1 else None
 
 
+def _lf_preprocess(doc: Doc):
+    return doc.text.lower()
+
+
 def default_metadata_columns() -> list[str]:
     return ["Text", "ID"]
 

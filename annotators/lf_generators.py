@@ -2,13 +2,35 @@ import skweak
 from spacy.tokens import Doc
 
 
-# [[ChatGPT]]
-def window_match(doc, words1, words2, window=5):
-    tokens = [t.text.lower() for t in doc]
-    for i, t in enumerate(tokens):
+# [[ChatGPT]]+
+def get_lemmas(doc: Doc):
+    return [t.lemma_.lower() for t in doc]
+
+
+# [[ChatGPT]]+
+def contains_any(doc: Doc, lexicon: list[str]):
+    lemmas = get_lemmas(doc)
+    return any(w in lemmas for w in lexicon)
+
+
+# [[ChatGPT]]+
+def window_match_lemma(doc: Doc, words1: list[str], words2: list[str], window=5):
+    lemmas = get_lemmas(doc)
+    for i, t in enumerate(lemmas):
         if t in words1:
-            for j in range(max(0, i - window), min(len(tokens), i + window)):
-                if tokens[j] in words2:
+            for j in range(max(0, i - window), min(len(lemmas), i + window)):
+                if lemmas[j] in words2:
+                    return True
+    return False
+
+
+# [[ChatGPT]]+
+def has_negation(doc: Doc, target_words: list[str], window=3):
+    lemmas = get_lemmas(doc)
+    for i, t in enumerate(lemmas):
+        if t in target_words:
+            for j in range(max(0, i - window), min(len(lemmas), i + window)):
+                if lemmas[j] == "nem":
                     return True
     return False
 
@@ -36,13 +58,13 @@ def generate_variants(base_name, label, concept1, concept2):
 
     # Variant 2: window match
     def cond2(doc):
-        return window_match(doc, concept1, concept2, window=5)
+        return window_match_lemma(doc, concept1, concept2, window=5)
 
     lfs.append(make_lf(base_name + "_window", label, cond2))
 
     # Variant 3: larger window (looser)
     def cond3(doc):
-        return window_match(doc, concept1, concept2, window=10)
+        return window_match_lemma(doc, concept1, concept2, window=10)
 
     lfs.append(make_lf(base_name + "_window_loose", label, cond3))
 

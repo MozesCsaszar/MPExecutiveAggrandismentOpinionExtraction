@@ -35,30 +35,3 @@ NEGATIVE = ["akadályoz", "lassú", "elfogult", "politikai", "korrupt"]
 NEUTRAL_PROCEDURAL = ["napirendi", "szavazás", "jegyzőkönyv", "ülést", "köszönöm"]
 
 NEUTRAL_META = ["jelentés", "statisztika", "adatok", "beszámoló"]
-
-TARGET_POWER = [
-    "kormány",
-    "miniszterelnök",
-    "állam",
-    "vezetés",
-]
-
-TARGET_INSTITUTIONS = [
-    "bíróság",
-    "alkotmánybíróság",
-    "parlament",
-    "ellenzék",
-]
-
-
-MODAL_POS = ["kell", "szükséges", "indokolt", "muszáj"]
-MODAL_NEG = ["nem", "tilos"]
-
-PRO_EFFICIENCY = ["gyors", "hatékony", "cselekvőképes"]
-PRO_CRISIS = ["válság", "veszélyhelyzet", "rendkívüli"]
-PRO_STRONG = ["erős", "stabil"]
-
-
-CON_RULE = ["jogállam", "jogállamiság", "alkotmány"]
-CON_ABUSE = ["visszaél", "önkény", "túlkapás"]
-CON_EROSION = ["sérül", "gyengül", "romlik", "veszély"]

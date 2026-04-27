@@ -2,12 +2,16 @@ import os
 import pandas as pd
 from pathlib import Path
 import spacy
-from spacy.tokens import Doc
+from spacy.tokens import Doc, DocBin
+from spacy.language import Language
 import re
 from blingfire import text_to_sentences
 from tqdm.auto import tqdm
 
 tqdm.pandas()
+
+# set up spac Doc custom attribute
+Doc.set_extension("attrs", default={}, force=True)
 
 
 def create_file_name(prefix: str, years: list[str], suffix: str, extension: str):
@@ -86,6 +90,8 @@ def extract_speeches(
         lambda x: re.sub(r"\[\[[^\[]*\]\]", "", x)
     )
 
+    df_speech["Full_text"] = df_speech["Text"].copy()
+
     df_speech["Text"] = df_speech["Text"].progress_apply(
         lambda t: text_to_sentences(t).split("\n")
     )
@@ -106,7 +112,7 @@ BATCH_SIZE = 128
 
 
 def make_docs(
-    nlp: spacy.language.Language,
+    nlp: Language,
     df: pd.DataFrame,
     *,
     text_column_name="Text",
@@ -131,3 +137,42 @@ def make_docs(
 
         doc._.attrs = meta
         yield doc
+
+
+def save_docs(
+    docs: list[Doc], years: list[str], filename: str = "nlpd", suffix: str = ""
+):
+    # save doc nlp component
+    doc_bin = DocBin(store_user_data=False)
+    for doc in docs:
+        doc_bin.add(doc)
+
+    doc_bin.to_disk(create_file_name(f"outputs/{filename}", years, suffix, "docbin"))
+
+    # save metadata
+    df = pd.DataFrame([doc._.attrs for doc in docs])
+    df.to_csv(create_file_name(f"outputs/{filename}", years, suffix, "csv"))
+
+
+def load_docs(
+    nlp: Language, years: list[str], filename: str = "nlpd", suffix: str = ""
+) -> list[Doc] | None:
+    try:
+        # extract metadata
+        df = pd.read_csv(create_file_name(f"outputs/{filename}", years, suffix, "csv"))
+        metas = df.to_dict(orient="records")
+
+        # recove docs
+        doc_bin = DocBin()
+        doc_bin = doc_bin.from_disk(
+            create_file_name(f"outputs/{filename}", years, suffix, "docbin")
+        )
+        docs = list(doc_bin.get_docs(nlp.vocab))
+
+        # annotate with metadata
+        for meta, doc in tqdm(zip(metas, docs)):
+            doc._.attrs = meta
+
+        return docs
+    except FileNotFoundError:
+        return None
