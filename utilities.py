@@ -97,6 +97,11 @@ def extract_speeches(
     )
     df_speech = df_speech.explode("Text").reset_index(drop=True)
 
+    # make the ID unique per sentence
+    df_speech["ID"] = (
+        df_speech["ID"] + "-" + (df_speech.groupby("ID").cumcount() + 1).apply(str)
+    )
+
     return df_speech
 
 

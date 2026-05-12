@@ -35,18 +35,20 @@ def preprocess_tag(
         "hu_core_news_md",
         disable=[
             # "tok2vec",
-            "senter",
+            # "senter",
             # "tagger",
             # "morphologizer",
             # "lookup_lemmatizer",
             # "trainable_lemmatizer",
             # "parser",
-            "ner",
+            # "ner",
         ],
     )
 
-    save_load_suffix = ""
+    save_load_suffix = suffix
     if start_date:
+        if save_load_suffix != "":
+            save_load_suffix += "-"
         save_load_suffix += start_date
         if end_date:
             save_load_suffix += "-"

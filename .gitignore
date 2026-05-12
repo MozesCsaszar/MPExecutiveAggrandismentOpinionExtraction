@@ -6,3 +6,5 @@ __pycache__/
 *.pickle
 checkpoint-*/
 archive/
+Data/
+V-Dem-CD-v16_csv/
