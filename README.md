@@ -1,3 +1,15 @@
+## Project flow
+1. preprocess_tag.py
+    - preprocesses the data: extracts speeches, makes stuff sentence level
+    - applies the WS tagging algorithm
+    - optionally runs evaluation
+2. evaluate_tags.py (optional)
+    - evaluates previously tagged data
+3. train.py
+    - trains an XLM-RoBERTa model on the WS labels from before
+4. tag_new_data.py
+    - tags new data using the newly trained classifier
+
 ## Project Structure
 
 ```mermaid
