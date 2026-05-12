@@ -6,7 +6,7 @@ import os
 import skweak
 
 
-def load_llm_labels(
+def load_file_based_labels(
     years: list[str],
     suffix: str,
     prefix: str = "_llm-labeled",
@@ -16,7 +16,10 @@ def load_llm_labels(
 
     # create the folder and filename regex
     folder = Path(path)
-    filename_regex = rf"{prefix}-{'-'.join(years)}-\d*-\d*_{suffix}\.csv"
+    if suffix != "":
+        suffix = "_" + suffix
+    filename_regex = rf"{prefix}-{'-'.join(years)}.*{suffix}\.csv"
+    print("File name regex:", filename_regex)
 
     # loop through all the meta files
     for file in os.listdir(folder):
@@ -39,14 +42,15 @@ def load_llm_labels(
     return {d["ID"]: d["label"] for d in df.to_dict(orient="records")}
 
 
-def create_llm_annotator(
+def create_file_based_annotator(
     name: str,
     years: list[str],
     suffix: str,
     prefix: str = "_llm-labeled",
     path: str = "llm_labeled",
 ):
-    label_dict = load_llm_labels(years, suffix, prefix, path)
+    label_dict = load_file_based_labels(years, suffix, prefix, path)
+    print("Annotator name:", name, "Number of entries:", len(label_dict))
 
     def lf(doc: Doc):
         label = label_dict.get(doc._.attrs["ID"])
@@ -57,10 +61,22 @@ def create_llm_annotator(
     return skweak.heuristics.FunctionAnnotator(name, lf)  # type: ignore
 
 
-lf_gemini_flash_v1_annotator = create_llm_annotator(
+lf_gemini_flash_v1_annotator = create_file_based_annotator(
     "lf_gemini_flash_v1_annotator", ["2017"], "gemini_flash"
 )
 
+similarity_annotators = []
+for label in ["pro", "contra", "neutral"]:
+    annotator = create_file_based_annotator(
+        f"lf_discovery_{label}",
+        ["2017"],
+        "",
+        prefix=f"discovery_{label}",
+        path="outputs",
+    )
 
-llm_annotators = skweak.base.CombinedAnnotator()
-llm_annotators.add_annotator(lf_gemini_flash_v1_annotator)
+    similarity_annotators.append(annotator)
+
+file_annotators = skweak.base.CombinedAnnotator()
+file_annotators.add_annotator(lf_gemini_flash_v1_annotator)
+file_annotators.add_annotators(*similarity_annotators)
