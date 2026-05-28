@@ -1,6 +1,9 @@
-from spacy.tokens import Doc, Span
+from spacy.tokens import Doc
 import skweak
 import pandas as pd
+import os
+from pathlib import Path
+import re
 
 
 # extract the labels for spans
@@ -40,3 +43,34 @@ def labeled_docs_to_pandas(
 
     # convert to pandas dataframe and return
     return pd.DataFrame(docs_dict)
+
+
+def load_label_files(
+    years: list[str],
+    suffix: str,
+    prefix: str = "_llm-labeled",
+    path: str = "llm_labeled",
+):
+    df = pd.DataFrame()
+
+    # create the folder and filename regex
+    folder = Path(path)
+    if suffix != "":
+        suffix = "_" + suffix
+    filename_regex = rf"{prefix}-{'-'.join(years)}.*{suffix}\.csv"
+    print("File name regex:", filename_regex)
+
+    # loop through all the meta files
+    for file in os.listdir(folder):
+        filename = os.fsdecode(file)
+        # if the filename matches the regex, load it
+        if re.match(filename_regex, filename):
+            # load the dataframe part using pandas
+            df_part = pd.read_csv(folder / file, header=0, index_col=0)
+            # concatenate with full dataframe
+            if len(df) != 0:
+                df = pd.concat([df, df_part])
+            else:
+                df = df_part
+
+    return df

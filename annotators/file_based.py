@@ -1,9 +1,6 @@
 from spacy.tokens import Doc
-import pandas as pd
-import re
-from pathlib import Path
-import os
 import skweak
+from .helpers import load_label_files
 
 
 def load_file_based_labels(
@@ -12,27 +9,7 @@ def load_file_based_labels(
     prefix: str = "_llm-labeled",
     path: str = "llm_labeled",
 ) -> dict:
-    df = pd.DataFrame()
-
-    # create the folder and filename regex
-    folder = Path(path)
-    if suffix != "":
-        suffix = "_" + suffix
-    filename_regex = rf"{prefix}-{'-'.join(years)}.*{suffix}\.csv"
-    print("File name regex:", filename_regex)
-
-    # loop through all the meta files
-    for file in os.listdir(folder):
-        filename = os.fsdecode(file)
-        # if the filename matches the regex, load it
-        if re.match(filename_regex, filename):
-            # load the dataframe part using pandas
-            df_part = pd.read_csv(folder / file, header=0, index_col=0)
-            # concatenate with full dataframe
-            if len(df) != 0:
-                df = pd.concat([df, df_part])
-            else:
-                df = df_part
+    df = load_label_files(years, suffix, prefix, path)
 
     if len(df) == 0:
         return {}

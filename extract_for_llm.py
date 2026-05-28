@@ -2,7 +2,6 @@ from utilities import extract_speeches, create_file_name
 import argparse
 from annotators.consts import PRO_POWER, CON_DEMO, CON_RULE_OF_LAW, INSTITUTIONS
 
-
 KEYWORDS = [*PRO_POWER, *CON_DEMO, *CON_RULE_OF_LAW, *INSTITUTIONS]
 
 
@@ -48,10 +47,6 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--end_date", type=str, default=None)
     parser.add_argument("-n", "--nr_lines", type=int, default=100)
     parser.add_argument("-f", "--starting_line", type=int, default=0)
-    parser.add_argument("--suffix", type=str, default="")
-    parser.add_argument(
-        "--auto_evaluate", action=argparse.BooleanOptionalAction, default=True
-    )
 
     args = parser.parse_args()
 

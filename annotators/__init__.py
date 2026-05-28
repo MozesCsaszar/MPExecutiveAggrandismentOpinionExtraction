@@ -1,7 +1,7 @@
 from .pro import pro_annotator
 from .contra import contra_annotator
 from .neutral import neutral_annotator
-from .helpers import labeled_docs_to_pandas
+from .helpers import labeled_docs_to_pandas, load_label_files
 from .file_based import file_annotators
 import skweak
 
@@ -19,5 +19,6 @@ __all__ = [
     "neutral_annotator",
     "full_annotator",
     "labeled_docs_to_pandas",
+    "load_label_files",
     "LABELS",
 ]

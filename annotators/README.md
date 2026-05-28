@@ -92,6 +92,8 @@ lf_gemini_flash_v1_annotator  0.021904   2700  135     554     2011   120567
             lf_con_overreach  0.000000      0    0       0        0   123267
 
 
+transform command: sed -E 's/^\s+//g' delete_me.txt | sed -E 's/\s+/\ \&\ /g' | sed -E 's/$/\ \\\\\n\\hline/g' | sed -E 's/_/\\_/g'
+
 - decent, but a tad bit too many pros and cons
 #### training data:
 TOTAL CONTRA: 2196, NEUTRAL: 2775, PRO: 9002
