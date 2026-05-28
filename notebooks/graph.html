@@ -1,0 +1,155 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 600px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"group": "JOBBIK-frakci\u00f3", "id": "AnderBalazs", "label": "AnderBalazs", "shape": "dot"}, {"group": "Mi Haz\u00e1nk", "id": "ApatiIstvan", "label": "ApatiIstvan", "shape": "dot"}, {"group": "KNDP-frakci\u00f3", "id": "AradszkiAndras", "label": "AradszkiAndras", "shape": "dot"}, {"group": "DK-frakci\u00f3", "id": "AratoGergely", "label": "AratoGergely", "shape": "dot"}, {"group": "Fidesz-frakci\u00f3", "id": "BNagyLaszlo", "label": "BNagyLaszlo", "shape": "dot"}, {"group": "Fidesz-frakci\u00f3", "id": "BajkaiIstvan", "label": "BajkaiIstvan", "shape": "dot"}, {"group": "JOBBIK-frakci\u00f3", "id": "BalczoZoltan", "label": "BalczoZoltan", "shape": "dot"}, {"group": "Fidesz-frakci\u00f3", "id": "BallaGyorgy", "label": "BallaGyorgy", "shape": "dot"}, {"group": "Fidesz-frakci\u00f3", "id": "BallaMihaly", "label": "BallaMihaly", "shape": "dot"}, {"group": "JOBBIK-frakci\u00f3", "id": "BanaTibor", "label": "BanaTibor", "shape": "dot"}, {"group": "MSZP-frakci\u00f3", "id": "BangoneBorbelyIldiko", "label": "BangoneBorbelyIldiko", "shape": "dot"}, {"group": "Fidesz-frakci\u00f3", "id": "AghPeter", "label": "AghPeter", "shape": "dot"}]);
+                  edges = new vis.DataSet([{"from": "AnderBalazs", "to": "ApatiIstvan", "value": 0.9933632819671242}, {"from": "AnderBalazs", "to": "AradszkiAndras", "value": 0.9938483378189062}, {"from": "AnderBalazs", "to": "AratoGergely", "value": 0.9980377540382877}, {"from": "AnderBalazs", "to": "BajkaiIstvan", "value": 0.9956298209851578}, {"from": "AnderBalazs", "to": "BalczoZoltan", "value": 0.9971974969262769}, {"from": "AnderBalazs", "to": "BallaGyorgy", "value": 0.9954296900647557}, {"from": "AnderBalazs", "to": "BanaTibor", "value": 0.9946030438486615}, {"from": "AnderBalazs", "to": "BangoneBorbelyIldiko", "value": 0.9968851578205264}, {"from": "AnderBalazs", "to": "AghPeter", "value": 0.9910738283986262}, {"from": "ApatiIstvan", "to": "AradszkiAndras", "value": 0.9920547408612825}, {"from": "ApatiIstvan", "to": "AratoGergely", "value": 0.993611944758493}, {"from": "ApatiIstvan", "to": "BajkaiIstvan", "value": 0.9925991326201646}, {"from": "ApatiIstvan", "to": "BalczoZoltan", "value": 0.9934900179044728}, {"from": "ApatiIstvan", "to": "BallaGyorgy", "value": 0.990701240594354}, {"from": "ApatiIstvan", "to": "BanaTibor", "value": 0.9913025885675375}, {"from": "ApatiIstvan", "to": "BangoneBorbelyIldiko", "value": 0.9916202737552137}, {"from": "AradszkiAndras", "to": "AratoGergely", "value": 0.9946491512675657}, {"from": "AradszkiAndras", "to": "BajkaiIstvan", "value": 0.9951309352294856}, {"from": "AradszkiAndras", "to": "BalczoZoltan", "value": 0.9965789811021093}, {"from": "AradszkiAndras", "to": "BallaGyorgy", "value": 0.9907084068520017}, {"from": "AradszkiAndras", "to": "BanaTibor", "value": 0.9932601199008546}, {"from": "AradszkiAndras", "to": "BangoneBorbelyIldiko", "value": 0.9930452969985752}, {"from": "AradszkiAndras", "to": "AghPeter", "value": 0.9941814706196075}, {"from": "AratoGergely", "to": "BajkaiIstvan", "value": 0.9970048944091551}, {"from": "AratoGergely", "to": "BalczoZoltan", "value": 0.9976516877966298}, {"from": "AratoGergely", "to": "BallaGyorgy", "value": 0.9969894052655559}, {"from": "AratoGergely", "to": "BanaTibor", "value": 0.9950314411597043}, {"from": "AratoGergely", "to": "BangoneBorbelyIldiko", "value": 0.9976148372867153}, {"from": "AratoGergely", "to": "AghPeter", "value": 0.9916278839202355}, {"from": "BNagyLaszlo", "to": "BajkaiIstvan", "value": 0.9920451637148103}, {"from": "BNagyLaszlo", "to": "AghPeter", "value": 0.9955223454514623}, {"from": "BajkaiIstvan", "to": "BalczoZoltan", "value": 0.9969179725089181}, {"from": "BajkaiIstvan", "to": "BallaGyorgy", "value": 0.9954114831603083}, {"from": "BajkaiIstvan", "to": "BanaTibor", "value": 0.9943459980942374}, {"from": "BajkaiIstvan", "to": "BangoneBorbelyIldiko", "value": 0.9957069324253488}, {"from": "BajkaiIstvan", "to": "AghPeter", "value": 0.9955411398574481}, {"from": "BalczoZoltan", "to": "BallaGyorgy", "value": 0.995719391897447}, {"from": "BalczoZoltan", "to": "BanaTibor", "value": 0.9945016718209887}, {"from": "BalczoZoltan", "to": "BangoneBorbelyIldiko", "value": 0.9964857345624898}, {"from": "BalczoZoltan", "to": "AghPeter", "value": 0.9933093139399796}, {"from": "BallaGyorgy", "to": "BanaTibor", "value": 0.9925001698164373}, {"from": "BallaGyorgy", "to": "BangoneBorbelyIldiko", "value": 0.9957826786318759}, {"from": "BallaGyorgy", "to": "AghPeter", "value": 0.9900105031441004}, {"from": "BanaTibor", "to": "BangoneBorbelyIldiko", "value": 0.9936618247519231}, {"from": "BanaTibor", "to": "AghPeter", "value": 0.9923064266675228}, {"from": "BangoneBorbelyIldiko", "to": "AghPeter", "value": 0.9923204214612962}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
