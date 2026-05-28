@@ -401,26 +401,7 @@ def extract_keyphrases(texts, top_n=100):
     return ranked[:top_n]
 
 
-# ============================================================
-# MAIN PIPELINE
-# ============================================================
-
 if __name__ == "__main__":
-
-    # --------------------------------------------------------
-    # INPUT
-    # --------------------------------------------------------
-    #
-    # You said:
-    # - sentences are already separated.
-    #
-    # So:
-    # sentences = [...]
-    #
-    # should contain ONE sentence per item.
-    #
-    # --------------------------------------------------------
-
     print("Loading docs...")
     docs = load_docs(nlp, ["2017"], suffix="md") or []
     docs = docs[:100]

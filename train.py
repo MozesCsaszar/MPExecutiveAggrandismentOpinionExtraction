@@ -5,13 +5,14 @@ from transformers import (
     TrainingArguments,
     Trainer,
 )
-from datasets import Dataset
+from datasets import Dataset, DatasetDict
 import numpy as np
 import evaluate
 import random
 import argparse
 import pandas as pd
 from consts import model_id, label2id, id2label
+from annotators.helpers import load_label_files
 
 
 def create_dataset(
@@ -23,6 +24,7 @@ def create_dataset(
     seed: int = 42,
     label_name: str = "hmm",
     test_size: float = 0.1,
+    use_llm_test: bool = True,
 ):
     if pro_frac + con_frac + neut_frac > 1:
         raise ValueError("Error: fraction sum should be 1!")
@@ -60,9 +62,17 @@ def create_dataset(
     print(f"SELECTED CONTRA: {nr_con}, NEUTRAL: {nr_neut}, PRO: {nr_pro}")
     # full data
     full_data = [*pro_data, *contra_data, *neutral_data]
+    full_data = Dataset.from_list(full_data)
 
-    # TODO: Add real validation (or remove it completely)
-    return Dataset.from_list(full_data).train_test_split(test_size=test_size, seed=seed)
+    if not use_llm_test:
+        return full_data.train_test_split(test_size=test_size, seed=seed)
+    else:
+        test = Dataset.from_list(
+            load_label_files(["2020"], "gemini_flash")[["sentence", "label"]]
+            .rename(columns={"sentence": "text"})
+            .to_dict("records")
+        )
+        return DatasetDict({"train": full_data, "test": test})
 
 
 def train(
@@ -161,6 +171,9 @@ if __name__ == "__main__":
     # CLI parameters
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset_path", type=str)
+    parser.add_argument(
+        "-u", "--use_llm_test", action=argparse.BooleanOptionalAction, default=True
+    )
     parser.add_argument("-s", "--seed", type=int, default=42)
     parser.add_argument("-l", "--label_name", type=str, default="hmm")
 

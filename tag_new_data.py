@@ -4,14 +4,14 @@ from transformers import (
 from datasets import Dataset
 from tqdm.auto import tqdm
 import argparse
-from utilities import extract_speeches
+from utilities import extract_speeches, create_file_name
 
 
 def tag_new_data(
     dataset_path: str = ".\\ParlaMint-HU.txt",
     years: list[str] = ["2017"],
     model_path: str = "xlm-r-ea/checkpoint-6",
-    batch_size: int = 256,
+    batch_size: int = 128,
 ):
     # load the model
     print("Loading the model...")
@@ -49,7 +49,7 @@ def tag_new_data(
     df_speech = df_speech.set_index(["Speaker_ID", "Date", "ID"]).sort_index()
 
     # save the data
-    df_speech.to_csv("./outputs/hu_2017.csv")
+    df_speech.to_csv(f"./outputs/{create_file_name('labeled', years, '', 'csv')}")
     print("Done!")
 
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dataset_path", type=str, default=".\\ParlaMint-HU.txt")
     parser.add_argument("-y", "--years", type=str, nargs="*", default=["2017"])
     parser.add_argument("-m", "--model_path", type=str, default="xlm-r-ea/checkpoint-6")
-    parser.add_argument("-b", "--batch_size", type=int, default=256)
+    parser.add_argument("-b", "--batch_size", type=int, default=128)
 
     args = parser.parse_args()
 
