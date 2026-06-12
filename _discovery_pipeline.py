@@ -31,7 +31,7 @@
 # IMPORTS
 # =========================
 
-from collections import Counter
+from .collections import Counter
 
 import pandas as pd
 from tqdm import tqdm

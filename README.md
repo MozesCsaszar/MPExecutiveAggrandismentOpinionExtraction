@@ -56,10 +56,10 @@ graph LR
     class S1,S2,WS2,C1 Done
 
     classDef InProgress fill:#ffa500
-    class S3,WS1 InProgress
+    class S3,WS1,ON1,ON2,V1 InProgress
 
     classDef NotStarted fill:#bb3333,color:#fff
-    class S4,ON1,ON2,V1 NotStarted
+    class S4 NotStarted
 ```
 
 ```mermaid
@@ -85,6 +85,49 @@ graph LR
     classDef NotStarted fill:#bb3333
     class Z NotStarted
 ```
+
+
+```mermaid
+graph LR
+    subgraph Sources["<b>Data Sources</b>"]
+        S1["Political Speeches"]
+        S2["Speaker Context<br/><i>Political opinion, party, ...</i>"]
+        S3["Political Statistics<br/><i>Democracy Status, ...</i>"]
+        S4["Political Events<br/><i>Elections, backsliding, ...</i>"]
+    end
+
+    subgraph WS["<b>Weak Supervision Setup</b>"]
+        WS1["Labeling Functions<br/><i>Heuristics, gazeteers, ML models, LLM predictions, ...</i>"]
+        WS2["Unified Model"]
+    end
+
+    subgraph Class["<b>Classifier Fine Tuning</b>"]
+        C1["Classifier (BERT)"]
+    end
+
+    subgraph OpinionNetwork["<b>Speech Similarity and EA Opinion Network</b>"]
+        ON1["Speech Similarity"]
+        ON2["Opinion Network"]
+    end
+
+    subgraph Valid["<b>Validation</b>"]
+        V1["Manual Validation"]
+    end
+
+    S1 --> WS1
+    S2 --> WS1
+    WS1 --> |"label matrix"| WS2
+    S1 --> C1
+    WS2 --> |"unified labels"| C1
+    S1 --> ON1
+    ON1 --> |"aggregated"| ON2
+    C1 --> |"aggregated"| ON2
+    S2 --> ON2
+    ON2 --> V1
+    S3 --> V1
+    S4 --> V1
+```
+
 
 ## Data
 - I'll be using the 2017 Hungarian parliamentary speeches from ParlaMint for purposes of building the training data as it is supposed to contain some EA

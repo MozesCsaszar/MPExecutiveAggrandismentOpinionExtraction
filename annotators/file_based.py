@@ -39,14 +39,14 @@ def create_file_based_annotator(
 
 
 lf_gemini_flash_v1_annotator = create_file_based_annotator(
-    "lf_gemini_flash_v1_annotator", ["2017"], "gemini_flash"
+    "lf_gemini_flash_v1_annotator", ["2017", "2020"], "gemini_flash"
 )
 
 similarity_annotators = []
 for label in ["pro", "contra", "neutral"]:
     annotator = create_file_based_annotator(
         f"lf_discovery_{label}",
-        ["2017"],
+        ["2017", "2020"],
         "",
         prefix=f"discovery_{label}",
         path="outputs",

@@ -145,32 +145,52 @@ def make_docs(
 
 
 def save_docs(
-    docs: list[Doc], years: list[str], filename: str = "nlpd", suffix: str = ""
+    docs: list[Doc],
+    years: list[str],
+    filename: str = "nlpd",
+    suffix: str = "",
+    *,
+    relative_path: str,
 ):
     # save doc nlp component
     doc_bin = DocBin(store_user_data=False)
     for doc in docs:
         doc_bin.add(doc)
 
-    doc_bin.to_disk(create_file_name(f"outputs/{filename}", years, suffix, "docbin"))
+    doc_bin.to_disk(
+        create_file_name(f"{relative_path}/outputs/{filename}", years, suffix, "docbin")
+    )
 
     # save metadata
     df = pd.DataFrame([doc._.attrs for doc in docs])
-    df.to_csv(create_file_name(f"outputs/{filename}", years, suffix, "csv"))
+    df.to_csv(
+        create_file_name(f"{relative_path}/outputs/{filename}", years, suffix, "csv")
+    )
 
 
 def load_docs(
-    nlp: Language, years: list[str], filename: str = "nlpd", suffix: str = ""
+    nlp: Language,
+    years: list[str],
+    filename: str = "nlpd",
+    suffix: str = "",
+    *,
+    relative_path: str = "",
 ) -> list[Doc] | None:
     try:
         # extract metadata
-        df = pd.read_csv(create_file_name(f"outputs/{filename}", years, suffix, "csv"))
+        df = pd.read_csv(
+            create_file_name(
+                f"{relative_path}/outputs/{filename}", years, suffix, "csv"
+            )
+        )
         metas = df.to_dict(orient="records")
 
         # recove docs
         doc_bin = DocBin()
         doc_bin = doc_bin.from_disk(
-            create_file_name(f"outputs/{filename}", years, suffix, "docbin")
+            create_file_name(
+                f"{relative_path}/outputs/{filename}", years, suffix, "docbin"
+            )
         )
         docs = list(doc_bin.get_docs(nlp.vocab))
 
