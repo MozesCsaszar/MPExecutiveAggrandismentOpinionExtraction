@@ -7,8 +7,18 @@ from sklearn.metrics.pairwise import cosine_similarity
 from typing import Literal
 import matplotlib.colors as mcolors
 from sentence_transformers import SentenceTransformer
+import os
+import re
 
 tqdm.pandas()
+
+
+def humanize_text(text: str):
+    return re.sub(r"_+", " ", text).title()
+
+
+def centralized_html_text(text: str, heading: str = "h2"):
+    return f"<{heading} style='text-align:center;'>{text}</{heading}>"
 
 
 def embed_texts(texts: list[str], model):
@@ -49,6 +59,20 @@ def get_opinion_color(labels: list[Literal["PRO", "NEUTRAL", "CONTRA"]]):
     return hex_color
 
 
+def get_simple_orientation(orientations: pd.Series):
+    mapper = {
+        "Right to far-right": "Right",
+        "Centre-right": "Center",
+        "Far-right": "Right",
+        "Right": "Right",
+        "Centre-left": "Center",
+        "-": "-",
+        "Centre-left to left": "Left",
+        "Centre to centre-left": "Center",
+    }
+    return mapper[orientations.iloc[0]]
+
+
 def create_embeddings(
     df: pd.DataFrame,
     # alternatives: "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
@@ -71,11 +95,11 @@ def create_embeddings(
     return df
 
 
-def load_data(year: int = 2020):
+def load_data(suffix: str = "2020"):
     # read the data in
     df = (
         pd.read_csv(
-            f"../outputs/embedded_{year}.csv",
+            f"../outputs/embedded_{suffix}.csv",
             dtype={
                 "Speaker_minister": "bool",
                 "Speaker_MP": "bool",
@@ -91,6 +115,11 @@ def load_data(year: int = 2020):
         lambda s: np.fromstring(s.strip("[]"), sep=" ", dtype=float).reshape(1, -1)  # type: ignore
     )  # type: ignore
 
+    # Get a simplified party label
+    df["speaker_party_simple"] = df["Speaker_party"].apply(
+        lambda x: x.strip("-frakció")
+    )
+
     return df
 
 
@@ -101,6 +130,7 @@ def compute_all_metrics(g: nx.Graph):
 
     # centrality measures
     metrics["degree_centrality"] = nx.degree_centrality(g)
+    metrics["closeness"] = nx.closeness_centrality(g)
     metrics["betweenness"] = nx.betweenness_centrality(g)
     metrics["pagerank"] = nx.pagerank(g)
     metrics["eigenvector"] = nx.eigenvector_centrality(g, max_iter=1000)
@@ -117,16 +147,36 @@ def compute_all_metrics(g: nx.Graph):
     return metrics
 
 
+def add_time_derivatives(
+    ts_metrics: pd.DataFrame,
+    time_col: str = "time",
+    group_col: str = "group",
+    value_col: str = "mean_opinion",
+) -> pd.DataFrame:
+    df = ts_metrics.copy()
+    df[time_col] = pd.to_datetime(df[time_col])
+    df = df.sort_values([group_col, time_col])
+
+    df[f"{value_col}_velocity"] = df.groupby(group_col)[value_col].diff()
+    df[f"{value_col}_acceleration"] = df.groupby(group_col)[
+        f"{value_col}_velocity"
+    ].diff()
+
+    return df
+
+
 def add_network_metrics(g: nx.Graph):
     metrics = compute_all_metrics(g)
 
     # attach info to individual nodes
     for node in g.nodes:
         g.nodes[node]["degree"] = metrics["degree"].get(node, 0)
+        g.nodes[node]["closeness"] = metrics["degree"].get(node, 0)
         g.nodes[node]["degree_centrality"] = metrics["degree_centrality"].get(node, 0)
         g.nodes[node]["betweenness"] = metrics["betweenness"].get(node, 0)
         g.nodes[node]["pagerank"] = metrics["pagerank"].get(node, 0)
         g.nodes[node]["eigenvector"] = metrics["eigenvector"].get(node, 0)
+        g.nodes[node]["community"] = metrics["communities"].get(node, 0)
 
     return g, metrics
 
@@ -143,7 +193,12 @@ def build_graph(
 
     # if there is no relevant data, return None
     if len(data) == 0:
-        return {"graph": nx.Graph(), "sim_matrix": [], "actors": [], "metrics": []}
+        return {
+            "graph": nx.Graph(),
+            "sim_matrix": [],
+            "actors": [],
+            "metrics": [],
+        }
 
     # get speech groups
     df_group = (
@@ -153,8 +208,7 @@ def build_graph(
                 "Speaker_ID",
                 "Party_orientation",
                 "Party_status",
-                "Speaker_party",
-                "Speaker_party_name",
+                "speaker_party_simple",
                 "Speaker_minister",
                 "Speaker_MP",
             ],
@@ -163,7 +217,8 @@ def build_graph(
             aggregated_embedding=("embedding", aggregate_mean),
             opinion=("label", get_average_label_value),
             opinion_color=("label", get_opinion_color),
-            nr_speeches=("label", len),
+            nr_sentences=("label", len),
+            orientation_simple=("Party_orientation", get_simple_orientation),
         )
         .reset_index()
         .set_index("Speaker_ID")
@@ -197,7 +252,12 @@ def build_graph(
     G, metrics = add_network_metrics(G)
 
     # return the graph, the similarities and the list of actors
-    return {"graph": G, "sim_matrix": sim_matrix, "actors": actors, "metrics": metrics}
+    return {
+        "graph": G,
+        "sim_matrix": sim_matrix,
+        "actors": actors,
+        "metrics": metrics,
+    }
 
 
 # build multiple graphs
@@ -207,7 +267,7 @@ def build_graphs(
     end_date: pd.Timestamp,
     start_offset: pd.offsets.DateOffset,
     end_offset: pd.offsets.DateOffset,
-):
+) -> tuple[list[dict], pd.DataFrame]:
     results = []
     graph_start_date = start_date
     graph_end_date = start_date + end_offset
@@ -223,4 +283,20 @@ def build_graphs(
         graph_end_date = graph_start_date + end_offset
         print(f"Graph created for period {graph_start_date}-{graph_end_date}")
 
-    return results
+    # get the combined data from the nodes
+    combined_data = (
+        pd.concat(
+            [
+                pd.DataFrame.from_dict(
+                    dict(r["graph"].nodes(data=True)), orient="index"
+                )
+                for r in results
+            ],
+            keys=[r["start_date"].month for r in results],
+            names=["month"],
+        )
+        .reset_index(level="month")
+        .reset_index(drop=True)
+    )
+
+    return (results, combined_data)
