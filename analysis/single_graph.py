@@ -33,6 +33,26 @@ from components.community_graph import (
     plot_organic_alignment_summary,
 )
 
+CATEGORICAL = [
+    "Speaker Party Simple",
+    "Party Orientation",
+    "Party Status",
+    "Speaker Minister",
+    "Speaker Mp",
+    "Orientation Simple",
+    "Community",
+]
+NUMERICAL = [
+    "Opinion",
+    "Nr Sentences",
+    "Degree",
+    "Closeness",
+    "Degree Centrality",
+    "Betweenness",
+    "Pagerank",
+    "Eigenvector",
+]
+
 
 def build_graph_sidebar():
     layout_name = st.sidebar.selectbox(
@@ -43,44 +63,52 @@ def build_graph_sidebar():
 
     group_attribute = st.sidebar.selectbox(
         "Physically group nodes by",
-        options=[None, "Speaker Party Simple"],
+        options=[None, *CATEGORICAL],
         index=0,
     )
 
     fill_color_attribute = st.sidebar.selectbox(
         "Node fill color from",
-        options=["Opinion", "Speaker Party Simple"],
+        options=[*NUMERICAL, *CATEGORICAL],
         index=0,
     )
 
     size_attribute = st.sidebar.selectbox(
         "Node size from",
-        options=["Degree", "degree_centrality", "betweenness", "pagerank"],
-        index=0,
+        options=[*NUMERICAL],
+        index=2,
     )
 
     border_color_attribute = st.sidebar.selectbox(
         "Node border color from",
-        options=[None, "Opinion", "Speaker Party Simple"],
+        options=[None, *CATEGORICAL, *NUMERICAL],
         index=0,
     )
 
     border_width_attribute = st.sidebar.selectbox(
         "Node border width from",
-        options=[None, "betweenness", "degree_centrality", "influence", "pagerank"],
+        options=[None, *NUMERICAL],
         index=0,
     )
 
     show_node_labels = st.sidebar.checkbox("Show node labels", value=False)
     use_physical_groups = st.sidebar.checkbox(
-        "Use physical compound groups", value=True
+        "Use physical compound groups", value=False
     )
 
-    min_node_size = st.sidebar.slider("Minimum node size", 5, 80, 30)
-    max_node_size = st.sidebar.slider("Maximum node size", 20, 180, 95)
+    min_node_size = st.sidebar.slider("Minimum node size", 1, 80, 30)
+    max_node_size = st.sidebar.slider("Maximum node size", 10, 180, 95)
     max_border_width = st.sidebar.slider("Maximum border width", 1, 14, 7)
 
-    group_spacing = st.sidebar.slider("Group Spacing", 0.3, 5.0, 1.0)
+    MAX_SPACING = 5.0
+    MIN_SPACING = 0.01
+    # group_spacing = (
+    #     MAX_SPACING
+    #     + MIN_SPACING
+    #     - st.sidebar.slider("Group Spacing", MIN_SPACING, MAX_SPACING, 1.0)
+    # )
+
+    group_spacing = st.sidebar.slider("Group Spacing", MIN_SPACING, MAX_SPACING, 1.0)
 
     return {
         "layout_name": layout_name,
@@ -101,64 +129,6 @@ def build_graph_sidebar():
 def build_cytoscape_graph(graph: nx.Graph, sidbar_settings: dict):
     selected = show_cytoscape_graph(graph, **sidbar_settings)
     return selected
-
-
-def display_community_analysis(
-    df: pd.DataFrame, group_col: str | list[str], score_col: str, g: nx.Graph
-):
-    metrics = opinion_group_metrics(df, group_col, score_col)
-
-    st.plotly_chart(
-        plotly_group_distributions(df, group_col, score_col), use_container_width=True
-    )
-
-    st.plotly_chart(
-        plotly_opinion_polarization_map(metrics, group_col), use_container_width=True
-    )
-
-    st.plotly_chart(
-        plotly_group_mean_and_mad(metrics, group_col), use_container_width=True
-    )
-
-    community_metrics = compute_community_metrics(df, g, group_col, score_col)
-    # st.plotly_chart(plot_community_network(g, community_metrics))
-
-    # st.plotly_chart(plot_community_opinion_map(community_metrics))
-    st.plotly_chart(plot_community_opinion_distance_heatmap(community_metrics))
-
-    st.plotly_chart(plot_community_metric_bar(community_metrics, "Polarization"))
-
-
-def display_centrality(graph: nx.Graph, df: pd.DataFrame):
-    # get a few distributions of centralities
-    cols = st.columns(2)
-    metric_names = ["Degree Centrality", "Closeness", "Betweenness", "Eigenvector"]
-    for i, metric_name in enumerate(metric_names):
-        with cols[i % 2]:
-            ax = sns.histplot(data=df, x=metric_name, kde=True)
-            ax.set(
-                xlabel=metric_name,
-                title=f"{metric_name} Centrality Distribution",
-            )
-            st.pyplot(ax.figure.figure)
-
-            ax.figure.figure.clear()
-
-    corr = df[metric_names].corr()
-    st.plotly_chart(
-        px.imshow(
-            corr,
-            text_auto=".2f",
-            color_continuous_scale="RdBu_r",
-            aspect="auto",
-            title="Centrality Measure Correlation Heatmap",
-        )
-    )
-
-    centralized_html_text("Top 5 MPs By Centrality Measures")
-    st.dataframe(analyze_centrality(graph))
-
-    st.text(analyze_centrality(graph).to_latex())
 
 
 def display_general(
@@ -212,16 +182,68 @@ def display_general(
         ax.clear()
 
 
-def display_community_alignment(df: pd.DataFrame):
-    organic_cols = ["Speaker Party Simple", "Orientation Simple", "Party Status"]
+def display_centrality(graph: nx.Graph, df: pd.DataFrame):
+    # get a few distributions of centralities
+    cols = st.columns(2)
+    metric_names = ["Degree Centrality", "Closeness", "Betweenness", "Eigenvector"]
+    for i, metric_name in enumerate(metric_names):
+        with cols[i % 2]:
+            ax = sns.histplot(data=df, x=metric_name, kde=True)
+            ax.set(
+                xlabel=metric_name,
+                title=f"{metric_name} Centrality Distribution",
+            )
+            st.pyplot(ax.figure.figure)
 
-    purity = compute_community_purity(
-        df,
-        community_col="Community",
-        organic_col="Speaker Party Simple",
+            ax.figure.figure.clear()
+
+    corr = df[metric_names].corr()
+    st.plotly_chart(
+        px.imshow(
+            corr,
+            text_auto=".2f",
+            color_continuous_scale="RdBu_r",
+            aspect="auto",
+            title="Centrality Measure Correlation Heatmap",
+        )
     )
 
-    st.dataframe(purity)
+    centralized_html_text("Top 5 MPs By Centrality Measures")
+    st.dataframe(analyze_centrality(graph))
+
+
+def display_community_analysis(
+    df: pd.DataFrame, group_col: str | list[str], score_col: str, g: nx.Graph
+):
+    metrics = opinion_group_metrics(df, group_col, score_col)
+
+    st.plotly_chart(
+        plotly_group_distributions(df, group_col, score_col), use_container_width=True
+    )
+
+    st.plotly_chart(
+        plotly_opinion_polarization_map(metrics, group_col), use_container_width=True
+    )
+
+    st.plotly_chart(
+        plotly_group_mean_and_mad(metrics, group_col), use_container_width=True
+    )
+
+    community_metrics = compute_community_metrics(df, g, group_col, score_col)
+    # st.plotly_chart(plot_community_network(g, community_metrics))
+
+    # st.plotly_chart(plot_community_opinion_map(community_metrics))
+    st.plotly_chart(plot_community_opinion_distance_heatmap(community_metrics))
+
+    st.plotly_chart(plot_community_metric_bar(community_metrics, "Polarization"))
+
+
+def display_community_alignment(df: pd.DataFrame, group_attribute: str):
+    organic_cols = ["Speaker Party Simple", "Orientation Simple", "Party Status"]
+
+    # make sure to not use community twice
+    if group_attribute == "Community":
+        group_attribute = "Speaker Party Simple"
 
     summary = compute_purity_for_many_organic_cols(
         df,
@@ -233,20 +255,19 @@ def display_community_alignment(df: pd.DataFrame):
 
     st.plotly_chart(
         plot_community_attribute_heatmap(
-            df, community_col="Community", attribute_col="Speaker Party Simple"
+            df, community_col="Community", attribute_col=group_attribute
         )
     )
 
     st.plotly_chart(
         plot_community_attribute_heatmap(
-            df, community_col="Speaker Party Simple", attribute_col="Community"
+            df, community_col=group_attribute, attribute_col="Community"
         )
     )
 
 
 df_speech = load_data()
 graph_datas, combined_data = build_graphs(df_speech)
-
 
 graph_months = [
     i + 1
@@ -297,8 +318,10 @@ with tabs[1]:
     display_centrality(graph, graph_df)
 
 
+group_col = sidebar_settings["group_attribute"] or "Speaker Party Simple"
+
 with tabs[2]:
-    display_community_analysis(graph_df, "Speaker Party Simple", "Opinion", graph)
+    display_community_analysis(graph_df, group_col, "Opinion", graph)
 
 with tabs[3]:
-    display_community_alignment(graph_df)
+    display_community_alignment(graph_df, group_col)

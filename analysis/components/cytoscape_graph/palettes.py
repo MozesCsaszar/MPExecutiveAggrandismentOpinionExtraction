@@ -58,24 +58,26 @@ CUSTOM_CATEGORY_COLORS: dict[str, dict[str, str]] = {
 # Visual encoding configuration
 # ---------------------------------------------------------------------
 
-CATEGORICAL_NODE_ATTRIBUTES = {
+CATEGORICAL_NODE_ATTRIBUTES = [
+    "Speaker Name",
     "Party Orientation",
-    "Orientation Simple",
     "Party Status",
     "Speaker Party Simple",
     "Speaker Minister",
-    "Speaker MP",
-}
-
-NUMERIC_NODE_ATTRIBUTES = {
+    "Speaker Mp",
+    "Orientation Simple",
+    "Community",
+]
+NUMERIC_NODE_ATTRIBUTES = [
     "Opinion",
     "Nr Sentences",
     "Degree",
+    "Closeness",
     "Degree Centrality",
     "Betweenness",
     "Pagerank",
-    "Weighted Degree",
-}
+    "Eigenvector",
+]
 
 # Sequential scale for normal numeric quantities.
 # Low value -> light color.

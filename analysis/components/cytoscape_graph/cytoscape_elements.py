@@ -436,21 +436,21 @@ def build_layout(
             "animate": True,
             "animationDuration": 800,
             # Stronger node repulsion spreads nodes and groups.
-            "nodeRepulsion": 9000 * group_spacing,
+            "nodeRepulsion": 27000,
             # Longer ideal edge length prevents everything from collapsing.
-            "idealEdgeLength": 140 * group_spacing,
+            "idealEdgeLength": 400 * group_spacing,
             # Lower elasticity makes edges less aggressively pull nodes together.
-            "edgeElasticity": 0.25,
+            "edgeElasticity": 0.05,
             # Important for compound nodes.
             # Higher values increase separation between nested structures.
-            "nestingFactor": 1.4 * group_spacing,
+            "nestingFactor": 2,
             # Reduces global collapsing toward the center.
-            "gravity": 0.15,
+            "gravity": 5,
             # Reduces compound-group collapsing.
             "gravityCompound": 0.08,
             # Larger range means gravity acts less locally.
-            "gravityRange": 3.8,
-            "gravityRangeCompound": 3.8,
+            "gravityRange": 0.8,
+            "gravityRangeCompound": 0.8,
             # Try to avoid overlap.
             "randomize": True,
             "packComponents": True,
@@ -501,6 +501,9 @@ def build_layout(
         "fit": True,
         "padding": 80,
     }
+
+
+GRAPH_ID = 0
 
 
 def show_cytoscape_graph(
@@ -556,13 +559,16 @@ def show_cytoscape_graph(
         max_edge_width=max_edge_width,
     )
 
+    global GRAPH_ID
+    GRAPH_ID += 1
+
     selected = streamlit_cytoscape(
         elements=elements,
         layout=build_layout(layout_name, group_spacing=group_spacing),
         node_styles=node_styles,
         edge_styles=edge_styles,
         height=760,
-        key="political-network-cytoscape",
+        key=f"pn-{GRAPH_ID}",
     )
 
     return selected
