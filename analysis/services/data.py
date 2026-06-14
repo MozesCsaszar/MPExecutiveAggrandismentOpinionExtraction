@@ -37,3 +37,14 @@ def build_graphs(
             attrs.update(new_attrs)
 
     return graphs, combined_data
+
+
+@st.cache_data
+def load_vdem_data() -> pd.DataFrame:
+    df_h = pd.read_csv("../Data/V-Dem-HU-v16.csv")
+
+    df_h.loc[:, "historical_date"] = pd.to_datetime(
+        df_h["historical_date"], format="%Y-%m-%d"
+    )
+
+    return df_h.set_index("historical_date")
