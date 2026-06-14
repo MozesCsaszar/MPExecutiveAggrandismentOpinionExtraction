@@ -213,7 +213,7 @@ def opinion_time_metrics(
 def compute_community_metrics(
     df: pd.DataFrame,
     G: nx.Graph,
-    community_col: str = "Community",
+    community_col: str = "Louvain Community",
     score_col: str = "score",
 ) -> pd.DataFrame:
     """
@@ -259,7 +259,7 @@ def compute_community_metrics(
 
 
 def compute_community_purity(
-    df, community_col="Community", organic_col="Speaker Party Simple"
+    df, community_col="Louvain Community", organic_col="Speaker Party Simple"
 ):
     table = pd.crosstab(df[community_col], df[organic_col])
 

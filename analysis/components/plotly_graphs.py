@@ -228,10 +228,8 @@ def plot_community_metric_bar(
     return fig
 
 
-def compute_community_opinion_distance_matrix(
-    metrics: pd.DataFrame,
-):
-    means = metrics.set_index("Louvain Community")["mean_opinion"]
+def compute_community_opinion_distance_matrix(metrics: pd.DataFrame, group_col: str):
+    means = metrics.set_index(group_col)["mean_opinion"]
 
     communities = means.index.tolist()
 
@@ -249,7 +247,7 @@ def compute_community_opinion_distance_matrix(
 
 
 def plot_community_opinion_distance_heatmap(ts_metrics: pd.DataFrame, group_col: str):
-    matrix = compute_community_opinion_distance_matrix(ts_metrics)
+    matrix = compute_community_opinion_distance_matrix(ts_metrics, group_col)
 
     group_label = get_community_label(group_col)
 

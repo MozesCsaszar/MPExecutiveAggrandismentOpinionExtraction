@@ -281,7 +281,6 @@ def build_graphs(
         )
         graph_start_date = graph_end_date + start_offset
         graph_end_date = graph_start_date + end_offset
-        print(f"Graph created for period {graph_start_date}-{graph_end_date}")
 
     # get the combined data from the nodes
     combined_data = (

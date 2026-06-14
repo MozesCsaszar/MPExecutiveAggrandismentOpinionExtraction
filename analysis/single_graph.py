@@ -287,8 +287,6 @@ graph_data, graph_df = (
     combined_data[combined_data["Month"] == graph_month],
 )
 
-print(graph_df.info(), graph_df.head())
-
 graph, sim_matrix, metrics, start_date, end_date = (
     graph_data["graph"],
     graph_data["sim_matrix"],
