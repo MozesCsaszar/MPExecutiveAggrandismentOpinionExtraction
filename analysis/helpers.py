@@ -176,7 +176,7 @@ def add_network_metrics(g: nx.Graph):
         g.nodes[node]["betweenness"] = metrics["betweenness"].get(node, 0)
         g.nodes[node]["pagerank"] = metrics["pagerank"].get(node, 0)
         g.nodes[node]["eigenvector"] = metrics["eigenvector"].get(node, 0)
-        g.nodes[node]["community"] = metrics["communities"].get(node, 0)
+        g.nodes[node]["louvain_community"] = metrics["communities"].get(node, 0)
 
     return g, metrics
 

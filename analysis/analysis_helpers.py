@@ -226,7 +226,7 @@ def compute_community_metrics(
         community_nodes = [
             node
             for node, data in G.nodes(data=True)
-            if data.get("Community") == community_id
+            if data.get(community_col) == community_id
         ]
 
         subgraph = G.subgraph(community_nodes)
@@ -235,7 +235,7 @@ def compute_community_metrics(
 
         rows.append(
             {
-                "Community": community_id,
+                community_col: community_id,
                 "size": len(cdf),
                 "mean_opinion": scores.mean(),
                 "median_opinion": scores.median(),

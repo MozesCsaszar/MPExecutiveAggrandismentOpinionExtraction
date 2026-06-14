@@ -66,7 +66,7 @@ CATEGORICAL_NODE_ATTRIBUTES = [
     "Speaker Minister",
     "Speaker Mp",
     "Orientation Simple",
-    "Community",
+    "Louvain Community",
 ]
 NUMERIC_NODE_ATTRIBUTES = [
     "Opinion",

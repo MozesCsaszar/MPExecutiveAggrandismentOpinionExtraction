@@ -19,29 +19,27 @@ df_speech = load_data()
 graph_datas, combined_data = build_graphs(df_speech)
 
 
+CATEGORICAL = [
+    "Speaker Party Simple",
+    "Party Orientation",
+    "Party Status",
+    "Speaker Minister",
+    "Speaker Mp",
+    "Orientation Simple",
+    "Louvain Community",
+]
+
+
 def build_sidebar():
     opinion_grouping = st.sidebar.selectbox(
         "Opinion Grouping",
-        options=[
-            "Speaker Party Simple",
-            "Party Status",
-            "Orientation Simple",
-            "Party Orientation",
-            "Speaker Mp",
-        ],
+        options=[*CATEGORICAL],
         index=0,
     )
 
     second_opinion_grouping = st.sidebar.selectbox(
         "Secondary Opinion Grouping",
-        options=[
-            None,
-            "Speaker Party Simple",
-            "Party Status",
-            "Orientation Simple",
-            "Party Orientation",
-            "Speaker Mp",
-        ],
+        options=[None, *CATEGORICAL],
         index=0,
     )
 
@@ -65,24 +63,27 @@ def display_opinion_evolution(
     cols = st.columns(3)
 
     with cols[0]:
-        st.pyplot(sns.lineplot(combined_data, x="Month", y="Opinion").figure.figure)
-        plt.figure().clear()
+        ax = sns.lineplot(combined_data, x="Month", y="Opinion")
+        ax.set_title("Mean Opinion Over Time")
+        st.pyplot(ax.figure.figure)
+
+        ax.figure.figure.clear()
 
     with cols[1]:
-        st.pyplot(
-            sns.lineplot(
-                combined_data, x="Month", y="Opinion", hue="Party Status"
-            ).figure.figure
-        )
-        plt.figure().clear()
+        ax = sns.lineplot(combined_data, x="Month", y="Opinion", hue="Party Status")
+        ax.set_title("Mean Opinion by Party Status")
+        st.pyplot(ax.figure.figure)
+
+        ax.figure.figure.clear()
 
     with cols[2]:
-        st.pyplot(
-            sns.lineplot(
-                combined_data, x="Month", y="Opinion", hue="Orientation Simple"
-            ).figure.figure
+        ax = sns.lineplot(
+            combined_data, x="Month", y="Opinion", hue="Orientation Simple"
         )
-        plt.figure().clear()
+        ax.set_title("Mean Opinion by Orientation Simple")
+        st.pyplot(ax.figure.figure)
+
+        ax.figure.figure.clear()
 
     st.plotly_chart(
         plotly_mean_opinion_over_time(

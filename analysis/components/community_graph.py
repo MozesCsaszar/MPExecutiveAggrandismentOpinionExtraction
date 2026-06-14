@@ -311,7 +311,7 @@ def compute_purity_for_many_organic_cols(
     for col in organic_cols:
         rows.append(
             {
-                "organic_variable": col,
+                "ground_truth_community": col,
                 "overall_purity": compute_overall_purity(
                     df,
                     community_col=community_col,
@@ -331,19 +331,19 @@ def compute_purity_for_many_organic_cols(
 def plot_organic_alignment_summary(summary):
     fig = px.bar(
         summary,
-        x="organic_variable",
+        x="ground_truth_community",
         y=[
             "overall_purity",
             "normalized_mutual_information",
             "adjusted_rand_index",
         ],
         barmode="group",
-        title="Alignment Between Louvain Communities and Organic Variables",
+        title="Alignment Between Louvain and Ground Truth Communities",
     )
 
     fig.update_layout(
-        xaxis_title="Organic variable",
-        yaxis_title="Alignment score",
+        xaxis_title="Ground Truth Communities",
+        yaxis_title="Alignment Score",
     )
 
     return fig

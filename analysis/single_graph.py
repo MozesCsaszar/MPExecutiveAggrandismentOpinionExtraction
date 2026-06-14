@@ -11,7 +11,6 @@ from components.cytoscape_graph.cytoscape_elements import (
 from analysis_helpers import (
     analyze_centrality,
     compute_community_metrics,
-    compute_community_purity,
     opinion_group_metrics,
 )
 from services.data import load_data, build_graphs
@@ -21,15 +20,12 @@ from components.plotly_graphs import (
     plot_community_opinion_distance_heatmap,
     plotly_group_distributions,
     plotly_group_mean_and_mad,
-    plotly_group_polarization,
     plotly_opinion_polarization_map,
 )
 from matplotlib.transforms import blended_transform_factory
 
 from components.community_graph import (
     compute_purity_for_many_organic_cols,
-    plot_community_network,
-    plot_community_overlap_heatmap,
     plot_organic_alignment_summary,
 )
 
@@ -40,7 +36,7 @@ CATEGORICAL = [
     "Speaker Minister",
     "Speaker Mp",
     "Orientation Simple",
-    "Community",
+    "Louvain Community",
 ]
 NUMERICAL = [
     "Opinion",
@@ -208,12 +204,16 @@ def display_centrality(graph: nx.Graph, df: pd.DataFrame):
         )
     )
 
-    centralized_html_text("Top 5 MPs By Centrality Measures")
+    st.html(
+        centralized_html_text(
+            "Top 5 Members of Parliament by Centrality Measures", heading="h3"
+        )
+    )
     st.dataframe(analyze_centrality(graph))
 
 
 def display_community_analysis(
-    df: pd.DataFrame, group_col: str | list[str], score_col: str, g: nx.Graph
+    df: pd.DataFrame, group_col: str, score_col: str, g: nx.Graph
 ):
     metrics = opinion_group_metrics(df, group_col, score_col)
 
@@ -233,21 +233,27 @@ def display_community_analysis(
     # st.plotly_chart(plot_community_network(g, community_metrics))
 
     # st.plotly_chart(plot_community_opinion_map(community_metrics))
-    st.plotly_chart(plot_community_opinion_distance_heatmap(community_metrics))
+    st.plotly_chart(
+        plot_community_opinion_distance_heatmap(community_metrics, group_col)
+    )
 
-    st.plotly_chart(plot_community_metric_bar(community_metrics, "Polarization"))
+    st.plotly_chart(
+        plot_community_metric_bar(
+            community_metrics, "Polarization", group_col=group_col
+        )
+    )
 
 
 def display_community_alignment(df: pd.DataFrame, group_attribute: str):
     organic_cols = ["Speaker Party Simple", "Orientation Simple", "Party Status"]
 
     # make sure to not use community twice
-    if group_attribute == "Community":
+    if group_attribute == "Louvain Community":
         group_attribute = "Speaker Party Simple"
 
     summary = compute_purity_for_many_organic_cols(
         df,
-        community_col="Community",
+        community_col="Louvain Community",
         organic_cols=organic_cols,
     )
 
@@ -255,13 +261,13 @@ def display_community_alignment(df: pd.DataFrame, group_attribute: str):
 
     st.plotly_chart(
         plot_community_attribute_heatmap(
-            df, community_col="Community", attribute_col=group_attribute
+            df, community_col="Louvain Community", attribute_col=group_attribute
         )
     )
 
     st.plotly_chart(
         plot_community_attribute_heatmap(
-            df, community_col=group_attribute, attribute_col="Community"
+            df, community_col=group_attribute, attribute_col="Louvain Community"
         )
     )
 
